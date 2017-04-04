@@ -14,8 +14,8 @@ The goals / steps of this project are the following:
 * Run your pipeline on a video stream (start with the test_video.mp4 and later implement on full project_video.mp4) and create a heat map of recurring detections frame by frame to reject outliers and follow detected vehicles.
 * Estimate a bounding box for vehicles detected.
 
-[//]: # (Image References)
-[image1]: ./examples/car_not_car.png
+[//]: # "Image References"
+[image1]: ./writeup_data/car_heat1.png
 [image2]: ./examples/HOG_example.jpg
 [image3]: ./examples/sliding_windows.jpg
 [image4]: ./examples/sliding_window.jpg
@@ -32,7 +32,7 @@ The goals / steps of this project are the following:
 
 ####1. Provide a Writeup / README that includes all the rubric points and how you addressed each one.  You can submit your writeup as markdown or pdf.  [Here](https://github.com/udacity/CarND-Vehicle-Detection/blob/master/writeup_template.md) is a template writeup for this project you can use as a guide and a starting point.  
 
-You're reading it!
+Please find the writeup.md file.
 
 ###Histogram of Oriented Gradients (HOG)
 
@@ -57,7 +57,42 @@ I tried various combinations of parameters and...
 
 ####3. Describe how (and identify where in your code) you trained a classifier using your selected HOG features (and color features if you used them).
 
-I trained a linear SVM using...
+The features of the cars and no-cars were stacked and accordingly even the corresponding labels were stacked.
+
+One of the most important operation performed on the data was that of normalization. Every type of feature has output of varying either from 0-1 or from 0-255. It is important that all of them are normalized. Also, the same normalization operation must be performed on the test feature vector.
+
+The data was split between 80% training and 20% testing. This was important to gause the accuracy of the model.
+
+Finally, a Linear SVM was used to train.
+
+```python
+X = np.vstack((car_features, notcar_features)).astype(np.float64)                        
+# Fit a per-column scaler
+X_scaler = StandardScaler().fit(X)
+# Apply the scaler to X
+scaled_X = X_scaler.transform(X)
+
+# Define the labels vector
+y = np.hstack((np.ones(len(car_features)), np.zeros(len(notcar_features))))
+
+# Split up data into randomized training and test sets
+rand_state = np.random.randint(0, 100)
+X_train, X_test, y_train, y_test = train_test_split(
+    scaled_X, y, test_size=0.2, random_state=rand_state)
+
+# Use a linear SVC 
+svc = LinearSVC()
+svc.fit(X_train, y_train)
+```
+
+```python
+Using: 9 orientations 8 pixels per cell and 2 cells per block
+Feature vector length: 8460
+21.45 Seconds to train SVC...
+Test Accuracy of SVC =  0.9865
+```
+
+
 
 ###Sliding Window Search
 
@@ -71,6 +106,9 @@ I decided to search random window positions at random scales all over the image 
 
 Ultimately I searched on two scales using YCrCb 3-channel HOG features plus spatially binned color and histograms of color in the feature vector, which provided a nice result.  Here are some example images:
 
+In order to optimize the classifier, the HOG was calculated for the entire image only once and them sub images were sliced out of it. This significantly saved computation.
+
+
 ![alt text][image4]
 ---
 
@@ -82,7 +120,9 @@ Here's a [link to my video result](./project_video.mp4)
 
 ####2. Describe how (and identify where in your code) you implemented some kind of filter for false positives and some method for combining overlapping bounding boxes.
 
-I recorded the positions of positive detections in each frame of the video.  From the positive detections I created a heatmap and then thresholded that map to identify vehicle positions.  I then used `scipy.ndimage.measurements.label()` to identify individual blobs in the heatmap.  I then assumed each blob corresponded to a vehicle.  I constructed bounding boxes to cover the area of each blob detected.  
+I recorded the positions of positive detections in each frame of the video.  From the positive detections I created a heatmap and then thresholded that map to identify vehicle positions.  I then used `scipy.ndimage.measurements.label()` to identify individual blobs in the heatmap.  I then assumed each blob corresponded to a vehicle.  I constructed bounding boxes to cover the area of each blob detected. 
+
+
 
 Here's an example result showing the heatmap from a series of frames of video, the result of `scipy.ndimage.measurements.label()` and the bounding boxes then overlaid on the last frame of video:
 
